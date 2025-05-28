@@ -26,11 +26,11 @@ interface Signal<T> {
  * This is the foundation that frameworks use to build effects
  */
 class Watcher {
-  private _callback: () => void;
-  private _watchedSignals = new Set<State<any> | Computed<any>>();
+  #callback: () => void;
+  #watchedSignals = new Set<State<any> | Computed<any>>();
 
   constructor(callback: () => void) {
-    this._callback = callback;
+    this.#callback = callback;
   }
 
   /**
@@ -38,7 +38,7 @@ class Watcher {
    */
   watch(signal: Signal<any>): void {
     if (signal instanceof State || signal instanceof Computed) {
-      this._watchedSignals.add(signal);
+      this.#watchedSignals.add(signal);
       signal._addWatcher(this);
     }
   }
@@ -48,7 +48,7 @@ class Watcher {
    */
   unwatch(signal: Signal<any>): void {
     if (signal instanceof State || signal instanceof Computed) {
-      this._watchedSignals.delete(signal);
+      this.#watchedSignals.delete(signal);
       signal._removeWatcher(this);
     }
   }
@@ -57,14 +57,14 @@ class Watcher {
    * Get all currently watched signals
    */
   getPending(): Signal<any>[] {
-    return Array.from(this._watchedSignals);
+    return Array.from(this.#watchedSignals);
   }
 
   /**
    * Internal method called when a watched signal changes
    */
   _notify(): void {
-    this._callback();
+    this.#callback();
   }
 }
 
@@ -72,35 +72,35 @@ class Watcher {
  * State signal - holds a writable value
  */
 class State<T> implements Signal<T> {
-  private _value: T;
-  private _dependents = new Set<Computed<any>>();
-  private _watchers = new Set<Watcher>();
+  #value: T;
+  #dependents = new Set<Computed<any>>();
+  #watchers = new Set<Watcher>();
 
   constructor(initialValue: T) {
-    this._value = initialValue;
+    this.#value = initialValue;
   }
 
   get(): T {
     // If a computed is currently running, register this state as a dependency
     if (currentlyComputing) {
-      this._dependents.add(currentlyComputing);
+      this.#dependents.add(currentlyComputing);
       currentlyComputing._addSource(this);
     }
-    return this._value;
+    return this.#value;
   }
 
   set(newValue: T): void {
     // Only update if the value actually changed
-    if (this._value !== newValue) {
-      this._value = newValue;
+    if (this.#value !== newValue) {
+      this.#value = newValue;
 
       // Mark all dependent computeds as stale
-      for (const dependent of this._dependents) {
+      for (const dependent of this.#dependents) {
         dependent._markStale();
       }
 
       // Notify all watchers synchronously (as per TC39 spec)
-      for (const watcher of this._watchers) {
+      for (const watcher of this.#watchers) {
         watcher._notify();
       }
     }
@@ -108,17 +108,17 @@ class State<T> implements Signal<T> {
 
   // Internal method to remove a dependent
   _removeDependent(computed: Computed<any>): void {
-    this._dependents.delete(computed);
+    this.#dependents.delete(computed);
   }
 
   // Internal method to add a watcher
   _addWatcher(watcher: Watcher): void {
-    this._watchers.add(watcher);
+    this.#watchers.add(watcher);
   }
 
   // Internal method to remove a watcher
   _removeWatcher(watcher: Watcher): void {
-    this._watchers.delete(watcher);
+    this.#watchers.delete(watcher);
   }
 }
 
@@ -126,42 +126,42 @@ class State<T> implements Signal<T> {
  * Computed signal - automatically tracks dependencies and caches results
  */
 class Computed<T> implements Signal<T> {
-  private _computation: () => T;
-  private _value: T | undefined = undefined;
-  private _isStale = true;
-  private _sources = new Set<State<any> | Computed<any>>();
-  private _dependents = new Set<Computed<any>>();
-  private _watchers = new Set<Watcher>();
+  #computation: () => T;
+  #value: T | undefined = undefined;
+  #isStale = true;
+  #sources = new Set<State<any> | Computed<any>>();
+  #dependents = new Set<Computed<any>>();
+  #watchers = new Set<Watcher>();
 
   constructor(computation: () => T) {
-    this._computation = computation;
+    this.#computation = computation;
   }
 
   get(): T {
     // If we're stale, recompute
-    if (this._isStale) {
-      this._recompute();
+    if (this.#isStale) {
+      this.#recompute();
     }
 
     // If a computed is currently running, this becomes a dependency
     if (currentlyComputing) {
-      this._dependents.add(currentlyComputing);
+      this.#dependents.add(currentlyComputing);
       currentlyComputing._addSource(this);
     }
 
-    return this._value!;
+    return this.#value!;
   }
 
-  private _recompute(): void {
+  #recompute(): void {
     // Clear old dependencies
-    for (const source of this._sources) {
+    for (const source of this.#sources) {
       if (source instanceof State) {
         source._removeDependent(this);
       } else if (source instanceof Computed) {
         source._removeDependent(this);
       }
     }
-    this._sources.clear();
+    this.#sources.clear();
 
     // Set ourselves as the currently computing signal
     const previouslyComputing = currentlyComputing;
@@ -169,8 +169,8 @@ class Computed<T> implements Signal<T> {
 
     try {
       // Run the computation - this will automatically track dependencies
-      this._value = this._computation();
-      this._isStale = false;
+      this.#value = this.#computation();
+      this.#isStale = false;
     } finally {
       // Restore the previous computing context
       currentlyComputing = previouslyComputing;
@@ -179,21 +179,21 @@ class Computed<T> implements Signal<T> {
 
   // Internal method to add a source dependency
   _addSource(source: State<any> | Computed<any>): void {
-    this._sources.add(source);
+    this.#sources.add(source);
   }
 
   // Internal method to mark this computed as stale
   _markStale(): void {
-    if (!this._isStale) {
-      this._isStale = true;
+    if (!this.#isStale) {
+      this.#isStale = true;
 
       // Propagate staleness to dependent computeds
-      for (const dependent of this._dependents) {
+      for (const dependent of this.#dependents) {
         dependent._markStale();
       }
 
       // Notify all watchers synchronously
-      for (const watcher of this._watchers) {
+      for (const watcher of this.#watchers) {
         watcher._notify();
       }
     }
@@ -201,17 +201,17 @@ class Computed<T> implements Signal<T> {
 
   // Internal method to remove a dependent
   _removeDependent(computed: Computed<any>): void {
-    this._dependents.delete(computed);
+    this.#dependents.delete(computed);
   }
 
   // Internal method to add a watcher
   _addWatcher(watcher: Watcher): void {
-    this._watchers.add(watcher);
+    this.#watchers.add(watcher);
   }
 
   // Internal method to remove a watcher
   _removeWatcher(watcher: Watcher): void {
-    this._watchers.delete(watcher);
+    this.#watchers.delete(watcher);
   }
 }
 
