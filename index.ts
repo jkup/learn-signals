@@ -238,9 +238,11 @@ w = new Signal.subtle.Watcher(() => {
     pending = true;
     queueMicrotask(() => {
       pending = false;
-      for (let s of w.getPending()) s.get();
-      // Re-watch all the signals that were pending
-      for (let s of w.getPending()) w.watch(s);
+      // Just trigger a read of all watched signals to update effects
+      // The watcher is already watching them, no need to re-watch
+      for (let s of w.getPending()) {
+        s.get();
+      }
     });
   }
 });
