@@ -11,8 +11,7 @@
  * - Pull-based: computations are lazy and only run when accessed
  */
 
-// Type aliases for better type safety
-type AnySignal<T = any> = State<T> | Computed<T>;
+// Type aliases
 type AnyComputed = Computed<any>;
 
 // Global state for tracking the currently executing computed
@@ -89,7 +88,7 @@ class Computed<T> implements Signal<T> {
   #computation: () => T;
   #value: T | undefined = undefined;
   #isStale = true;
-  #sources = new Set<AnySignal>();
+  #sources = new Set<Signal<any>>();
   #dependents = new Set<AnyComputed>();
   #watchers = new Set<Watcher>();
 
@@ -138,7 +137,7 @@ class Computed<T> implements Signal<T> {
   }
 
   // Internal method to add a source dependency
-  _addSource(source: AnySignal): void {
+  _addSource(source: Signal<any>): void {
     this.#sources.add(source);
   }
 
@@ -181,8 +180,8 @@ class Computed<T> implements Signal<T> {
  */
 class Watcher {
   #callback: () => void;
-  #watchedSignals = new Set<AnySignal>();
-  #pendingSignals = new Set<AnySignal>();
+  #watchedSignals = new Set<Signal<any>>();
+  #pendingSignals = new Set<Signal<any>>();
 
   constructor(callback: () => void) {
     this.#callback = callback;
@@ -221,7 +220,7 @@ class Watcher {
   /**
    * Internal method called when a watched signal changes
    */
-  _notify(signal: AnySignal): void {
+  _notify(signal: Signal<any>): void {
     this.#pendingSignals.add(signal);
     this.#callback();
   }
