@@ -18,9 +18,11 @@ This library is designed to help you understand:
 
 - **`Signal.State<T>`** - Writable reactive state
 - **`Signal.Computed<T>`** - Computed values that automatically track dependencies
-- **`effect(fn)`** - Side effects that run when dependencies change
-- **`Signal.subtle.untrack(fn)`** - Run code without creating dependencies
 - **`Signal.subtle.Watcher`** - Low-level API for observing signal changes
+
+### 🔄 Effect API
+
+- **`effect(fn)`** - Side effects that run when dependencies change. This is just added for educational purposes. In reality, this would be handled by the framework.
 
 ### 🔄 Key Characteristics
 
@@ -77,7 +79,6 @@ const result = computed.get(); // NOW the computation runs
 This educational version omits some optimizations found in production signals:
 
 - **No performance optimizations** (prioritizes clarity)
-- **Simplified effect implementation** (runs once, doesn't auto-rerun)
 - **No advanced scheduling** (basic effect implementation)
 - **No memory optimizations** (uses simple data structures)
 - **No async support** (synchronous only)
