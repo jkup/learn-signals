@@ -2,13 +2,12 @@
  * Simple Educational Signals Implementation
  *
  * This is a minimal, easy-to-understand implementation of the TC39 Signals proposal.
- * It prioritizes clarity and educational value over performance optimizations.
  *
  * Key concepts:
  * - Signal.State: writable reactive state
  * - Signal.Computed: computed values that automatically track dependencies
  * - Signal.subtle.Watcher: low-level API for observing signal changes
- * - Auto-tracking: computed signals automatically track what state they read
+ * - Auto-tracking: computed signals automatically track what state they depend on
  * - Pull-based: computations are lazy and only run when accessed
  * - Glitch-free: no unnecessary recalculations
  */
@@ -23,53 +22,6 @@ let w: Watcher;
 // Base Signal interface
 interface Signal<T> {
   get(): T;
-}
-
-/**
- * Watcher class - low-level API for observing signal changes
- * This is the foundation that frameworks use to build effects
- */
-class Watcher {
-  #callback: () => void;
-  #watchedSignals = new Set<State<any> | Computed<any>>();
-
-  constructor(callback: () => void) {
-    this.#callback = callback;
-  }
-
-  /**
-   * Watch a signal for changes
-   */
-  watch(signal: Signal<any>): void {
-    if (signal instanceof State || signal instanceof Computed) {
-      this.#watchedSignals.add(signal);
-      signal._addWatcher(this);
-    }
-  }
-
-  /**
-   * Stop watching a signal
-   */
-  unwatch(signal: Signal<any>): void {
-    if (signal instanceof State || signal instanceof Computed) {
-      this.#watchedSignals.delete(signal);
-      signal._removeWatcher(this);
-    }
-  }
-
-  /**
-   * Get all currently watched signals
-   */
-  getPending(): Signal<any>[] {
-    return Array.from(this.#watchedSignals);
-  }
-
-  /**
-   * Internal method called when a watched signal changes
-   */
-  _notify(): void {
-    this.#callback();
-  }
 }
 
 /**
@@ -216,6 +168,53 @@ class Computed<T> implements Signal<T> {
   // Internal method to remove a watcher
   _removeWatcher(watcher: Watcher): void {
     this.#watchers.delete(watcher);
+  }
+}
+
+/**
+ * Watcher class - low-level API for observing signal changes
+ * This is the foundation that frameworks use to build effects
+ */
+class Watcher {
+  #callback: () => void;
+  #watchedSignals = new Set<State<any> | Computed<any>>();
+
+  constructor(callback: () => void) {
+    this.#callback = callback;
+  }
+
+  /**
+   * Watch a signal for changes
+   */
+  watch(signal: Signal<any>): void {
+    if (signal instanceof State || signal instanceof Computed) {
+      this.#watchedSignals.add(signal);
+      signal._addWatcher(this);
+    }
+  }
+
+  /**
+   * Stop watching a signal
+   */
+  unwatch(signal: Signal<any>): void {
+    if (signal instanceof State || signal instanceof Computed) {
+      this.#watchedSignals.delete(signal);
+      signal._removeWatcher(this);
+    }
+  }
+
+  /**
+   * Get all currently watched signals
+   */
+  getPending(): Signal<any>[] {
+    return Array.from(this.#watchedSignals);
+  }
+
+  /**
+   * Internal method called when a watched signal changes
+   */
+  _notify(): void {
+    this.#callback();
   }
 }
 
