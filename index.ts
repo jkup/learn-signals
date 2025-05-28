@@ -70,13 +70,13 @@ class State<T> implements Signal<T> {
     this.#dependents.delete(computed);
   }
 
-  // Internal method to add a watcher
-  _addWatcher(watcher: Watcher): void {
+  // Public method to add a watcher
+  addWatcher(watcher: Watcher): void {
     this.#watchers.add(watcher);
   }
 
-  // Internal method to remove a watcher
-  _removeWatcher(watcher: Watcher): void {
+  // Public method to remove a watcher
+  removeWatcher(watcher: Watcher): void {
     this.#watchers.delete(watcher);
   }
 }
@@ -163,13 +163,13 @@ class Computed<T> implements Signal<T> {
     this.#dependents.delete(computed);
   }
 
-  // Internal method to add a watcher
-  _addWatcher(watcher: Watcher): void {
+  // Public method to add a watcher
+  addWatcher(watcher: Watcher): void {
     this.#watchers.add(watcher);
   }
 
-  // Internal method to remove a watcher
-  _removeWatcher(watcher: Watcher): void {
+  // Public method to remove a watcher
+  removeWatcher(watcher: Watcher): void {
     this.#watchers.delete(watcher);
   }
 }
@@ -193,7 +193,7 @@ class Watcher {
   watch(signal: Signal<any>): void {
     if (signal instanceof State || signal instanceof Computed) {
       this.#watchedSignals.add(signal);
-      signal._addWatcher(this);
+      signal.addWatcher(this);
     }
   }
 
@@ -204,7 +204,7 @@ class Watcher {
     if (signal instanceof State || signal instanceof Computed) {
       this.#watchedSignals.delete(signal);
       this.#pendingSignals.delete(signal);
-      signal._removeWatcher(this);
+      signal.removeWatcher(this);
     }
   }
 
