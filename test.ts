@@ -1,9 +1,9 @@
 import { Signal, effect } from "./index.js";
 
 // Simple test runner
-function test(name: string, fn: () => void) {
+async function test(name: string, fn: () => void | Promise<void>) {
   try {
-    fn();
+    await fn();
     console.log(`✅ ${name}`);
   } catch (error) {
     console.log(`❌ ${name}: ${error}`);
@@ -115,7 +115,7 @@ test("Conditional dependencies", () => {
 });
 
 // Test 6: Effects
-test("Effects run on changes", () => {
+test("Effects run on changes", async () => {
   const state = new Signal.State(1);
   let effectRuns = 0;
   let lastValue = 0;
@@ -128,15 +128,14 @@ test("Effects run on changes", () => {
   assert(effectRuns === 1, "Effect should run immediately");
   assert(lastValue === 1, "Effect should see initial value");
 
-  // Note: In this simplified educational implementation,
-  // effects don't automatically re-run when dependencies change.
-  // This is different from production implementations but simpler to understand.
+  // With the TC39-compliant effect implementation, effects properly re-run
   state.set(5);
-  assert(
-    effectRuns === 1,
-    "Effect runs once in this simplified implementation"
-  );
-  assert(lastValue === 1, "Effect sees initial value");
+
+  // Give microtask a chance to run
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  assert(effectRuns === 2, "Effect should re-run when dependency changes");
+  assert(lastValue === 5, "Effect should see updated value");
 
   stop();
 });
@@ -200,7 +199,7 @@ test("Effect cleanup", () => {
 });
 
 // Test 10: No glitches (diamond problem)
-test("No glitches with diamond dependencies", () => {
+test("No glitches with diamond dependencies", async () => {
   const base = new Signal.State(1);
   const left = new Signal.Computed(() => base.get());
   const right = new Signal.Computed(() => base.get());
@@ -214,9 +213,13 @@ test("No glitches with diamond dependencies", () => {
 
   assert(effectRuns === 1, "Effect should run once initially");
 
-  // In this simplified implementation, effects don't auto-rerun
+  // With the TC39-compliant effect implementation, effects re-run when dependencies change
   base.set(2);
-  assert(effectRuns === 1, "Effect runs once in simplified implementation");
+
+  // Give microtask a chance to run
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  assert(effectRuns === 2, "Effect should re-run when dependency changes");
   assert(combined.get() === 4, "Combined should be 2 + 2 = 4");
 
   stop();

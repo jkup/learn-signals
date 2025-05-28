@@ -16,6 +16,10 @@
 // Global state for tracking the currently executing computed
 let currentlyComputing: Computed<any> | null = null;
 
+// Global watcher for scheduling effect updates - will be initialized after Signal is defined
+let pending = false;
+let w: Watcher;
+
 // Base Signal interface
 interface Signal<T> {
   get(): T;
@@ -215,36 +219,51 @@ class Computed<T> implements Signal<T> {
   }
 }
 
+// Main Signal namespace following TC39 proposal structure
+const Signal = {
+  State,
+  Computed,
+
+  // Signal.subtle namespace as per TC39 proposal
+  subtle: {
+    Watcher,
+    untrack,
+    currentComputed: () => currentlyComputing,
+  },
+};
+
+// Initialize the global watcher after Signal is defined
+w = new Signal.subtle.Watcher(() => {
+  if (!pending) {
+    pending = true;
+    queueMicrotask(() => {
+      pending = false;
+      for (let s of w.getPending()) s.get();
+      // Re-watch all the signals that were pending
+      for (let s of w.getPending()) w.watch(s);
+    });
+  }
+});
+
 /**
- * Simple effect implementation for educational purposes
- * Effects run side effects when their dependencies change
- *
- * Note: This uses a simplified approach for educational clarity.
- * In production, frameworks would build effects using the Watcher API.
+ * Effect implementation following TC39 proposal patterns
+ * This function would usually live in a library/framework, not application code
+ * NOTE: This scheduling logic is too basic to be useful. Do not copy/paste.
  */
-function effect(fn: () => void | (() => void)): () => void {
-  let cleanup: (() => void) | void;
 
-  // Create a computed that runs the effect function
-  const computed = new Computed(() => {
-    // Run cleanup from previous execution
-    if (typeof cleanup === "function") {
-      cleanup();
-    }
-
-    // Run the effect and capture any cleanup function
-    cleanup = fn();
-    return undefined;
+// An effect Signal which evaluates to cb, which schedules a read of
+// itself on the microtask queue whenever one of its dependencies might change
+function effect(cb: () => void | (() => void)): () => void {
+  let destructor: (() => void) | void;
+  let c = new Signal.Computed(() => {
+    destructor?.();
+    destructor = cb();
   });
-
-  // Run the effect immediately
-  computed.get();
-
-  // Return a function to stop the effect
+  w.watch(c);
+  c.get();
   return () => {
-    if (typeof cleanup === "function") {
-      cleanup();
-    }
+    destructor?.();
+    w.unwatch(c);
   };
 }
 
@@ -262,19 +281,6 @@ function untrack<T>(fn: () => T): T {
     currentlyComputing = previouslyComputing;
   }
 }
-
-// Main Signal namespace following TC39 proposal structure
-const Signal = {
-  State,
-  Computed,
-
-  // Signal.subtle namespace as per TC39 proposal
-  subtle: {
-    Watcher,
-    untrack,
-    currentComputed: () => currentlyComputing,
-  },
-};
 
 // Export everything
 export { Signal, effect };
