@@ -21,6 +21,7 @@ type AnyState = State<any>;
 let currentlyComputing: AnyComputed | null = null;
 
 // Global watcher for scheduling effect updates - will be initialized after Signal is defined
+// pending flag prevents multiple microtask scheduling in the same tick
 let pending = false;
 let w: Watcher;
 
@@ -237,6 +238,8 @@ const Signal = {
 };
 
 // Initialize the global watcher after Signal is defined
+// This watcher batches effect updates using microtasks to prevent duplicate executions
+// when multiple dependencies change in the same synchronous execution
 w = new Signal.subtle.Watcher(() => {
   if (!pending) {
     pending = true;
@@ -252,8 +255,13 @@ w = new Signal.subtle.Watcher(() => {
 });
 
 /**
- * Effect implementation following TC39 proposal patterns
- * This function would usually live in a library/framework, not application code
+ * Effect implementation
+ * This would usually live in a library/framework, not application code
+ *
+ * Creates a computed that re-runs when dependencies change, using the global watcher
+ * for batched updates. Returns a cleanup function to stop the effect.
+ *
+ * Limitations: Basic scheduling, no error boundaries, no async support
  * NOTE: This scheduling logic is too basic to be useful. Do not copy/paste.
  */
 
