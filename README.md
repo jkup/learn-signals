@@ -10,7 +10,6 @@ This library is designed to help you understand:
 - The core concepts of the TC39 Signals proposal
 - Auto-tracking dependency management
 - Pull-based lazy evaluation
-- Glitch-free execution
 
 ## ✨ Key Features
 
@@ -28,7 +27,6 @@ This library is designed to help you understand:
 
 - **Auto-tracking**: Computed signals automatically discover their dependencies
 - **Pull-based**: Computations are lazy and only run when accessed
-- **Glitch-free**: No unnecessary recalculations or intermediate states
 - **Cached**: Results are memoized until dependencies change
 - **Synchronous notifications**: Watchers are notified immediately when signals change
 
