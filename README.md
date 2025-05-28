@@ -87,8 +87,3 @@ This educational version omits some optimizations found in production signals:
 - **No memory optimizations** (uses simple data structures)
 - **No async support** (synchronous only)
 - **Simplified error handling** (basic error propagation)
-
-## 🔗 Links
-
-- [TC39 Signals Proposal](https://github.com/tc39/proposal-signals) - The official proposal
-- [Rob Eisenberg's Blog Post](https://eisenbergeffect.medium.com/a-tc39-proposal-for-signals-f0bedd37a335) - Explains the motivation and design
