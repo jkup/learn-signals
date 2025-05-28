@@ -61,7 +61,7 @@ class State<T> implements Signal<T> {
 
       // Notify all watchers synchronously
       for (const watcher of this.#watchers) {
-        watcher._notify();
+        watcher._notify(this);
       }
     }
   }
@@ -154,7 +154,7 @@ class Computed<T> implements Signal<T> {
 
       // Notify all watchers synchronously
       for (const watcher of this.#watchers) {
-        watcher._notify();
+        watcher._notify(this);
       }
     }
   }
@@ -182,6 +182,7 @@ class Computed<T> implements Signal<T> {
 class Watcher {
   #callback: () => void;
   #watchedSignals = new Set<AnySignal>();
+  #pendingSignals = new Set<AnySignal>();
 
   constructor(callback: () => void) {
     this.#callback = callback;
@@ -203,21 +204,25 @@ class Watcher {
   unwatch(signal: Signal<any>): void {
     if (signal instanceof State || signal instanceof Computed) {
       this.#watchedSignals.delete(signal);
+      this.#pendingSignals.delete(signal);
       signal._removeWatcher(this);
     }
   }
 
   /**
-   * Get all currently watched signals
+   * Get signals that have changed since last processed
    */
   getPending(): Signal<any>[] {
-    return Array.from(this.#watchedSignals);
+    const pending = Array.from(this.#pendingSignals);
+    this.#pendingSignals.clear(); // Clear after returning
+    return pending;
   }
 
   /**
    * Internal method called when a watched signal changes
    */
-  _notify(): void {
+  _notify(signal: AnySignal): void {
+    this.#pendingSignals.add(signal);
     this.#callback();
   }
 }
@@ -265,7 +270,7 @@ w = new Signal.subtle.Watcher(() => {
 
 // An effect Signal which evaluates to cb, which schedules a read of
 // itself on the microtask queue whenever one of its dependencies might change
-function effect(cb: () => void | (() => void)): () => void {
+function effect(cb: () => void): () => void {
   let destructor: (() => void) | void;
   let c = new Signal.Computed(() => {
     destructor?.();
