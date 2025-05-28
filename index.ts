@@ -15,7 +15,6 @@
 // Type aliases for better type safety
 type AnySignal<T = any> = State<T> | Computed<T>;
 type AnyComputed = Computed<any>;
-type AnyState = State<any>;
 
 // Global state for tracking the currently executing computed
 let currentlyComputing: AnyComputed | null = null;
@@ -61,7 +60,7 @@ class State<T> implements Signal<T> {
         dependent._markStale();
       }
 
-      // Notify all watchers synchronously (as per TC39 spec)
+      // Notify all watchers synchronously
       for (const watcher of this.#watchers) {
         watcher._notify();
       }
@@ -224,12 +223,12 @@ class Watcher {
   }
 }
 
-// Main Signal namespace following TC39 proposal structure
+// Main Signal namespace
 const Signal = {
   State,
   Computed,
 
-  // Signal.subtle namespace as per TC39 proposal
+  // Signal.subtle namespace
   subtle: {
     Watcher,
     untrack,
