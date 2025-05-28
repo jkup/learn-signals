@@ -1,4 +1,4 @@
-import { Signal, effect } from "./index.js";
+import { Signal, effect } from "./index.ts";
 
 console.log("🚦 Simple Signals Educational Examples\n");
 

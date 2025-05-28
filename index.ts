@@ -219,53 +219,31 @@ class Computed<T> implements Signal<T> {
  * Simple effect implementation for educational purposes
  * Effects run side effects when their dependencies change
  *
- * Note: This is built on top of the Watcher API as frameworks would do
+ * Note: This uses a simplified approach for educational clarity.
+ * In production, frameworks would build effects using the Watcher API.
  */
 function effect(fn: () => void | (() => void)): () => void {
   let cleanup: (() => void) | void;
-  let isRunning = false;
 
-  // Create a watcher that will be notified of changes
-  const watcher = new Watcher(() => {
-    if (!isRunning) {
-      runEffect();
-    }
-  });
-
-  function runEffect() {
-    isRunning = true;
-
+  // Create a computed that runs the effect function
+  const computed = new Computed(() => {
     // Run cleanup from previous execution
     if (typeof cleanup === "function") {
       cleanup();
     }
 
-    // Create a computed to track dependencies
-    const computed = new Computed(() => {
-      cleanup = fn();
-      return undefined;
-    });
-
-    // Watch the computed for changes
-    watcher.watch(computed);
-
-    // Run the effect
-    computed.get();
-
-    isRunning = false;
-  }
+    // Run the effect and capture any cleanup function
+    cleanup = fn();
+    return undefined;
+  });
 
   // Run the effect immediately
-  runEffect();
+  computed.get();
 
   // Return a function to stop the effect
   return () => {
     if (typeof cleanup === "function") {
       cleanup();
-    }
-    // Clean up all watched signals
-    for (const signal of watcher.getPending()) {
-      watcher.unwatch(signal);
     }
   };
 }

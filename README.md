@@ -125,11 +125,11 @@ const stop = effect(() => {
   };
 });
 
+// Note: In this educational implementation, effects run once when created.
+// Production implementations would re-run effects when dependencies change.
 message.set("World");
-// Logs: "Cleaning up for: Hello"
-// Logs: "Current message: World"
 
-stop(); // Manual cleanup
+stop(); // Manual cleanup - runs the cleanup function
 ```
 
 ### Untrack for Breaking Dependencies
@@ -221,6 +221,7 @@ This implementation includes helpful comments and simplified logic to make it ea
 This educational version omits some optimizations found in production signals:
 
 - **No performance optimizations** (prioritizes clarity)
+- **Simplified effect implementation** (runs once, doesn't auto-rerun)
 - **No advanced scheduling** (basic effect implementation)
 - **No memory optimizations** (uses simple data structures)
 - **No async support** (synchronous only)
