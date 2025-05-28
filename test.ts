@@ -215,4 +215,48 @@ test("No glitches with diamond dependencies", () => {
   stop();
 });
 
+// Test 11: Watcher API
+test("Watcher API notifications", () => {
+  const state = new Signal.State(1);
+  const computed = new Signal.Computed(() => state.get() * 2);
+
+  let notificationCount = 0;
+  const watcher = new Signal.subtle.Watcher(() => {
+    notificationCount++;
+  });
+
+  // Watch the state
+  watcher.watch(state);
+
+  // Change state - should trigger notification
+  state.set(2);
+  assert(
+    notificationCount === 1,
+    "Should receive notification for state change"
+  );
+
+  // Watch the computed too
+  watcher.watch(computed);
+
+  // Change state again - should trigger notifications for both
+  state.set(3);
+  assert(
+    notificationCount === 3,
+    "Should receive notifications for both state and computed"
+  );
+
+  // Unwatch state
+  watcher.unwatch(state);
+
+  // Change state - should only notify computed
+  state.set(4);
+  assert(
+    notificationCount === 4,
+    "Should only notify computed after unwatching state"
+  );
+
+  // Clean up
+  watcher.unwatch(computed);
+});
+
 console.log("\n🎉 All tests completed!");

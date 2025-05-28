@@ -158,4 +158,33 @@ stopTempEffect();
 stopMessageEffect();
 stopGlitchEffect();
 
+// Example 9: Using the low-level Watcher API
+console.log("\n🔍 Example 9: Low-level Watcher API");
+const watchedState = new Signal.State("initial");
+const watchedComputed = new Signal.Computed(
+  () => `Computed: ${watchedState.get()}`
+);
+
+let notificationCount = 0;
+const watcher = new Signal.subtle.Watcher(() => {
+  notificationCount++;
+  console.log(`  Watcher notification #${notificationCount}`);
+});
+
+// Watch both the state and computed
+watcher.watch(watchedState);
+watcher.watch(watchedComputed);
+
+console.log("Changing watched state...");
+watchedState.set("changed");
+
+console.log("Changing watched state again...");
+watchedState.set("final");
+
+console.log(`Total notifications: ${notificationCount}`);
+
+// Clean up watcher
+watcher.unwatch(watchedState);
+watcher.unwatch(watchedComputed);
+
 console.log("\n✅ All examples completed!");

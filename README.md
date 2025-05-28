@@ -20,6 +20,7 @@ This library is designed to help you understand:
 - **`Signal.Computed<T>`** - Computed values that automatically track dependencies
 - **`effect(fn)`** - Side effects that run when dependencies change
 - **`Signal.subtle.untrack(fn)`** - Run code without creating dependencies
+- **`Signal.subtle.Watcher`** - Low-level API for observing signal changes
 
 ### 🔄 Key Characteristics
 
@@ -27,6 +28,7 @@ This library is designed to help you understand:
 - **Pull-based**: Computations are lazy and only run when accessed
 - **Glitch-free**: No unnecessary recalculations or intermediate states
 - **Cached**: Results are memoized until dependencies change
+- **Synchronous notifications**: Watchers are notified immediately when signals change
 
 ## 🚀 Quick Start
 
@@ -154,6 +156,30 @@ untracked.set(200);
 console.log(computed.get()); // Still 102 (not recomputed)
 ```
 
+### Low-level Watcher API
+
+The `Signal.subtle.Watcher` provides the foundation for building effects and reactive systems:
+
+```typescript
+const state = new Signal.State(0);
+const computed = new Signal.Computed(() => state.get() * 2);
+
+// Create a watcher that gets notified of changes
+const watcher = new Signal.subtle.Watcher(() => {
+  console.log("Something changed!");
+});
+
+// Watch specific signals
+watcher.watch(state);
+watcher.watch(computed);
+
+state.set(5); // Logs: "Something changed!" (twice - once for state, once for computed)
+
+// Stop watching
+watcher.unwatch(state);
+watcher.unwatch(computed);
+```
+
 ## 🏗️ How It Works
 
 ### Auto-tracking Magic
@@ -195,10 +221,22 @@ This implementation includes helpful comments and simplified logic to make it ea
 This educational version omits some optimizations found in production signals:
 
 - **No performance optimizations** (prioritizes clarity)
-- **No computed→computed dependency tracking** (simplified)
 - **No advanced scheduling** (basic effect implementation)
 - **No memory optimizations** (uses simple data structures)
 - **No async support** (synchronous only)
+- **Simplified error handling** (basic error propagation)
+
+### ✅ TC39 Proposal Alignment
+
+This implementation now includes the key aspects of the TC39 proposal:
+
+- **`Signal.State` and `Signal.Computed`** - Core signal types
+- **`Signal.subtle.Watcher`** - Low-level observation API
+- **`Signal.subtle.untrack`** - Dependency escape hatch
+- **Auto-tracking** - Automatic dependency discovery
+- **Pull-based evaluation** - Lazy computation
+- **Synchronous notifications** - Immediate watcher callbacks
+- **Computed→computed dependencies** - Full dependency tracking
 
 ## 🧪 Running the Examples
 

@@ -7,6 +7,7 @@
  * Key concepts:
  * - Signal.State: writable reactive state
  * - Signal.Computed: computed values that automatically track dependencies
+ * - Signal.subtle.Watcher: low-level API for observing signal changes
  * - Auto-tracking: computed signals automatically track what state they read
  * - Pull-based: computations are lazy and only run when accessed
  * - Glitch-free: no unnecessary recalculations
@@ -21,11 +22,59 @@ interface Signal<T> {
 }
 
 /**
+ * Watcher class - low-level API for observing signal changes
+ * This is the foundation that frameworks use to build effects
+ */
+class Watcher {
+  private _callback: () => void;
+  private _watchedSignals = new Set<State<any> | Computed<any>>();
+
+  constructor(callback: () => void) {
+    this._callback = callback;
+  }
+
+  /**
+   * Watch a signal for changes
+   */
+  watch(signal: Signal<any>): void {
+    if (signal instanceof State || signal instanceof Computed) {
+      this._watchedSignals.add(signal);
+      signal._addWatcher(this);
+    }
+  }
+
+  /**
+   * Stop watching a signal
+   */
+  unwatch(signal: Signal<any>): void {
+    if (signal instanceof State || signal instanceof Computed) {
+      this._watchedSignals.delete(signal);
+      signal._removeWatcher(this);
+    }
+  }
+
+  /**
+   * Get all currently watched signals
+   */
+  getPending(): Signal<any>[] {
+    return Array.from(this._watchedSignals);
+  }
+
+  /**
+   * Internal method called when a watched signal changes
+   */
+  _notify(): void {
+    this._callback();
+  }
+}
+
+/**
  * State signal - holds a writable value
  */
 class State<T> implements Signal<T> {
   private _value: T;
   private _dependents = new Set<Computed<any>>();
+  private _watchers = new Set<Watcher>();
 
   constructor(initialValue: T) {
     this._value = initialValue;
@@ -49,12 +98,27 @@ class State<T> implements Signal<T> {
       for (const dependent of this._dependents) {
         dependent._markStale();
       }
+
+      // Notify all watchers synchronously (as per TC39 spec)
+      for (const watcher of this._watchers) {
+        watcher._notify();
+      }
     }
   }
 
   // Internal method to remove a dependent
   _removeDependent(computed: Computed<any>): void {
     this._dependents.delete(computed);
+  }
+
+  // Internal method to add a watcher
+  _addWatcher(watcher: Watcher): void {
+    this._watchers.add(watcher);
+  }
+
+  // Internal method to remove a watcher
+  _removeWatcher(watcher: Watcher): void {
+    this._watchers.delete(watcher);
   }
 }
 
@@ -65,7 +129,9 @@ class Computed<T> implements Signal<T> {
   private _computation: () => T;
   private _value: T | undefined = undefined;
   private _isStale = true;
-  private _sources = new Set<State<any>>();
+  private _sources = new Set<State<any> | Computed<any>>();
+  private _dependents = new Set<Computed<any>>();
+  private _watchers = new Set<Watcher>();
 
   constructor(computation: () => T) {
     this._computation = computation;
@@ -79,8 +145,8 @@ class Computed<T> implements Signal<T> {
 
     // If a computed is currently running, this becomes a dependency
     if (currentlyComputing) {
-      // Note: In a full implementation, we'd track computed->computed dependencies
-      // For simplicity, we're only tracking state->computed dependencies
+      this._dependents.add(currentlyComputing);
+      currentlyComputing._addSource(this);
     }
 
     return this._value!;
@@ -89,7 +155,11 @@ class Computed<T> implements Signal<T> {
   private _recompute(): void {
     // Clear old dependencies
     for (const source of this._sources) {
-      source._removeDependent(this);
+      if (source instanceof State) {
+        source._removeDependent(this);
+      } else if (source instanceof Computed) {
+        source._removeDependent(this);
+      }
     }
     this._sources.clear();
 
@@ -108,7 +178,7 @@ class Computed<T> implements Signal<T> {
   }
 
   // Internal method to add a source dependency
-  _addSource(source: State<any>): void {
+  _addSource(source: State<any> | Computed<any>): void {
     this._sources.add(source);
   }
 
@@ -116,36 +186,86 @@ class Computed<T> implements Signal<T> {
   _markStale(): void {
     if (!this._isStale) {
       this._isStale = true;
-      // In a full implementation, we'd propagate staleness to dependent computeds
+
+      // Propagate staleness to dependent computeds
+      for (const dependent of this._dependents) {
+        dependent._markStale();
+      }
+
+      // Notify all watchers synchronously
+      for (const watcher of this._watchers) {
+        watcher._notify();
+      }
     }
+  }
+
+  // Internal method to remove a dependent
+  _removeDependent(computed: Computed<any>): void {
+    this._dependents.delete(computed);
+  }
+
+  // Internal method to add a watcher
+  _addWatcher(watcher: Watcher): void {
+    this._watchers.add(watcher);
+  }
+
+  // Internal method to remove a watcher
+  _removeWatcher(watcher: Watcher): void {
+    this._watchers.delete(watcher);
   }
 }
 
 /**
  * Simple effect implementation for educational purposes
  * Effects run side effects when their dependencies change
+ *
+ * Note: This is built on top of the Watcher API as frameworks would do
  */
 function effect(fn: () => void | (() => void)): () => void {
   let cleanup: (() => void) | void;
+  let isRunning = false;
 
-  // Create a computed that runs the effect function
-  const computed = new Computed(() => {
+  // Create a watcher that will be notified of changes
+  const watcher = new Watcher(() => {
+    if (!isRunning) {
+      runEffect();
+    }
+  });
+
+  function runEffect() {
+    isRunning = true;
+
     // Run cleanup from previous execution
     if (typeof cleanup === "function") {
       cleanup();
     }
 
-    // Run the effect and capture any cleanup function
-    cleanup = fn();
-  });
+    // Create a computed to track dependencies
+    const computed = new Computed(() => {
+      cleanup = fn();
+      return undefined;
+    });
+
+    // Watch the computed for changes
+    watcher.watch(computed);
+
+    // Run the effect
+    computed.get();
+
+    isRunning = false;
+  }
 
   // Run the effect immediately
-  computed.get();
+  runEffect();
 
   // Return a function to stop the effect
   return () => {
     if (typeof cleanup === "function") {
       cleanup();
+    }
+    // Clean up all watched signals
+    for (const signal of watcher.getPending()) {
+      watcher.unwatch(signal);
     }
   };
 }
@@ -170,8 +290,9 @@ const Signal = {
   State,
   Computed,
 
-  // Simple utilities namespace (simplified version of Signal.subtle)
+  // Signal.subtle namespace as per TC39 proposal
   subtle: {
+    Watcher,
     untrack,
     currentComputed: () => currentlyComputing,
   },
@@ -182,24 +303,3 @@ export { Signal, effect };
 
 // Default export for convenience
 export default Signal;
-
-/**
- * Example usage:
- *
- * import { Signal, effect } from './index.js';
- *
- * // Create reactive state
- * const count = new Signal.State(0);
- * const doubled = new Signal.Computed(() => count.get() * 2);
- *
- * // Create an effect that logs when doubled changes
- * const stop = effect(() => {
- *   console.log('Doubled:', doubled.get());
- * });
- *
- * // Update the count - this will trigger the effect
- * count.set(5); // Logs: "Doubled: 10"
- *
- * // Stop the effect
- * stop();
- */
