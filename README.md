@@ -4,12 +4,18 @@ A minimal, easy-to-understand implementation of JavaScript Signals based on the 
 
 ## 🎯 Purpose
 
-This library is designed to help you understand:
+This library is designed for people with solid JavaScript knowledge to get a better understanding of the TC39 Signals proposal.
 
-- How reactive programming works under the hood
-- The core concepts of the TC39 Signals proposal
-- Auto-tracking dependency management
-- Pull-based lazy evaluation
+Signals have become extremely popular in the JavaScript framework ecosystem. Some popular examples are:
+
+- [Solid](https://www.solidjs.com/tutorial/introduction_signals)
+- [Vue](https://vuejs.org/guide/extras/reactivity-in-depth)
+- [Svelte Runes](https://svelte.dev/blog/runes)
+- [Angular](https://angular.dev/guide/signals)
+- [Lit](https://lit.dev/docs/data/signals/)
+- [Qwik](https://qwik.dev/docs/components/state/#usesignal)
+- [Signalium](https://signalium.dev/)
+- [Signia](https://signia.dev/)
 
 ## ✨ Key Features
 
