@@ -16,7 +16,7 @@ console.log(`After set(1): ${counter.get()} is ${parity.get()}`);
 counter.set(4);
 console.log(`After set(4): ${counter.get()} is ${parity.get()}`);
 
-// Example 2: Auto-tracking demonstration
+// Example 2: Auto-tracking
 console.log("\n🔗 Example 2: Auto-tracking");
 const firstName = new Signal.State("John");
 const lastName = new Signal.State("Doe");

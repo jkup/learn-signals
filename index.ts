@@ -12,8 +12,13 @@
  * - Glitch-free: no unnecessary recalculations
  */
 
+// Type aliases for better type safety
+type AnySignal<T = any> = State<T> | Computed<T>;
+type AnyComputed = Computed<any>;
+type AnyState = State<any>;
+
 // Global state for tracking the currently executing computed
-let currentlyComputing: Computed<any> | null = null;
+let currentlyComputing: AnyComputed | null = null;
 
 // Global watcher for scheduling effect updates - will be initialized after Signal is defined
 let pending = false;
@@ -29,7 +34,7 @@ interface Signal<T> {
  */
 class State<T> implements Signal<T> {
   #value: T;
-  #dependents = new Set<Computed<any>>();
+  #dependents = new Set<AnyComputed>();
   #watchers = new Set<Watcher>();
 
   constructor(initialValue: T) {
@@ -63,7 +68,7 @@ class State<T> implements Signal<T> {
   }
 
   // Internal method to remove a dependent
-  _removeDependent(computed: Computed<any>): void {
+  _removeDependent(computed: AnyComputed): void {
     this.#dependents.delete(computed);
   }
 
@@ -85,8 +90,8 @@ class Computed<T> implements Signal<T> {
   #computation: () => T;
   #value: T | undefined = undefined;
   #isStale = true;
-  #sources = new Set<State<any> | Computed<any>>();
-  #dependents = new Set<Computed<any>>();
+  #sources = new Set<AnySignal>();
+  #dependents = new Set<AnyComputed>();
   #watchers = new Set<Watcher>();
 
   constructor(computation: () => T) {
@@ -134,7 +139,7 @@ class Computed<T> implements Signal<T> {
   }
 
   // Internal method to add a source dependency
-  _addSource(source: State<any> | Computed<any>): void {
+  _addSource(source: AnySignal): void {
     this.#sources.add(source);
   }
 
@@ -156,7 +161,7 @@ class Computed<T> implements Signal<T> {
   }
 
   // Internal method to remove a dependent
-  _removeDependent(computed: Computed<any>): void {
+  _removeDependent(computed: AnyComputed): void {
     this.#dependents.delete(computed);
   }
 
@@ -177,7 +182,7 @@ class Computed<T> implements Signal<T> {
  */
 class Watcher {
   #callback: () => void;
-  #watchedSignals = new Set<State<any> | Computed<any>>();
+  #watchedSignals = new Set<AnySignal>();
 
   constructor(callback: () => void) {
     this.#callback = callback;
