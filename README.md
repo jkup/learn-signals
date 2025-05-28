@@ -20,7 +20,7 @@ This library is designed to help you understand:
 - **`Signal.Computed<T>`** - Computed values that automatically track dependencies
 - **`Signal.subtle.Watcher`** - Low-level API for observing signal changes
 
-### 🔄 Effect API
+### ⚛️ Effect API (not part of the TC39 proposal)
 
 - **`effect(fn)`** - Side effects that run when dependencies change. This is just added for educational purposes. In reality, this would be handled by the framework.
 
