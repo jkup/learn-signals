@@ -132,32 +132,6 @@ console.log("Changing counter...");
 counter.set(5);
 console.log(`After change: ${expensiveComputation.get()}`); // Should recompute only once
 
-// Example 8: Avoiding glitches
-console.log("\n✨ Example 8: Glitch-free Updates");
-const a = new Signal.State(1);
-const b = new Signal.State(2);
-const sum = new Signal.Computed(() => a.get() + b.get());
-const product = new Signal.Computed(() => a.get() * b.get());
-const combined = new Signal.Computed(() => sum.get() + product.get());
-
-let effectRunCount = 0;
-const stopGlitchEffect = effect(() => {
-  effectRunCount++;
-  const result = combined.get();
-  console.log(`  Effect run #${effectRunCount}: combined = ${result}`);
-});
-
-console.log("Updating both a and b...");
-a.set(3);
-b.set(4);
-console.log(`Total effect runs: ${effectRunCount}`); // Should be minimal
-
-// Cleanup
-console.log("\n🧽 Cleaning up...");
-stopTempEffect();
-stopMessageEffect();
-stopGlitchEffect();
-
 // Example 9: Using the low-level Watcher API
 console.log("\n🔍 Example 9: Low-level Watcher API");
 const watchedState = new Signal.State("initial");

@@ -9,7 +9,6 @@
  * - Signal.subtle.Watcher: low-level API for observing signal changes
  * - Auto-tracking: computed signals automatically track what state they depend on
  * - Pull-based: computations are lazy and only run when accessed
- * - Glitch-free: no unnecessary recalculations
  */
 
 // Type aliases for better type safety

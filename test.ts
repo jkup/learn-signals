@@ -198,33 +198,6 @@ test("Effect cleanup", () => {
   assert(cleanupCalls === 1, "Cleanup should be called when effect stops");
 });
 
-// Test 10: No glitches (diamond problem)
-test("No glitches with diamond dependencies", async () => {
-  const base = new Signal.State(1);
-  const left = new Signal.Computed(() => base.get());
-  const right = new Signal.Computed(() => base.get());
-  const combined = new Signal.Computed(() => left.get() + right.get());
-
-  let effectRuns = 0;
-  const stop = effect(() => {
-    effectRuns++;
-    combined.get();
-  });
-
-  assert(effectRuns === 1, "Effect should run once initially");
-
-  // With the TC39-compliant effect implementation, effects re-run when dependencies change
-  base.set(2);
-
-  // Give microtask a chance to run
-  await new Promise((resolve) => setTimeout(resolve, 0));
-
-  assert(effectRuns === 2, "Effect should re-run when dependency changes");
-  assert(combined.get() === 4, "Combined should be 2 + 2 = 4");
-
-  stop();
-});
-
 // Test 11: Watcher API
 test("Watcher API notifications", () => {
   const state = new Signal.State(1);
