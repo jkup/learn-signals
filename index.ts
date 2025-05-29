@@ -50,7 +50,7 @@ class State<T> implements Signal<T> {
 
   set(newValue: T): void {
     // Only update if the value actually changed
-    if (this.#value !== newValue) {
+    if (!Object.is(this.#value, newValue)) {
       this.#value = newValue;
 
       // Mark all dependent computeds as stale

@@ -22,7 +22,7 @@ Signals have become extremely popular in the JavaScript framework ecosystem. Som
 ### 📦 Core API
 
 - **`Signal.State<T>`** - Writable reactive state
-- **`Signal.Computed<T>`** - Computed values that automatically track dependencies
+- **`Signal.Computed<T>`** - Derived values that automatically track dependencies
 - **`Signal.subtle.Watcher`** - Low-level API for observing signal changes
 
 ### ⚛️ Effect API (not part of the TC39 proposal)
@@ -45,14 +45,35 @@ const firstName = new Signal.State("John");
 const lastName = new Signal.State("Doe");
 
 // This computed automatically tracks both firstName and lastName
-const fullName = new Signal.Computed(
-  () => `${firstName.get()} ${lastName.get()}`
-);
+const fullName = new Signal.Computed(() => {
+  console.log("Computed function called!");
+  return `${firstName.get()} ${lastName.get()}`;
+});
 
-console.log(fullName.get()); // "John Doe"
+// First access - the function runs!
+console.log(fullName.get());
+// Output: "Computed function called!"
+// Output: "John Doe"
 
+// Second access - the function does not run!
+console.log(fullName.get());
+// Output: "John Doe"
+
+// Third access - still cached
+console.log(fullName.get());
+// Output: "John Doe"
+
+// Now change a dependency - this invalidates the cache
 firstName.set("Jane");
-console.log(fullName.get()); // "Jane Doe" - automatically updated!
+
+// Next access triggers re-computation because firstName changed
+console.log(fullName.get());
+// Output: "Computed function called!"
+// Output: "Jane Doe"
+
+// Accessing again - cached again until next dependency change
+console.log(fullName.get());
+// Output: "Jane Doe" (no "Computing..." message)
 ```
 
 ## 🏗️ How It Works
