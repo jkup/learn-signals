@@ -66,24 +66,3 @@ effect(() => {
 console.log("Changing temperature...");
 temperature.set(25);
 temperature.set(30);
-
-// Example 5: Effect with cleanup
-console.log("\nExample 5: Effect with Cleanup");
-const message = new Signal.State("Hello");
-let intervalId: number | undefined;
-
-effect(() => {
-  const msg = message.get();
-  console.log(`Setting up timer for: "${msg}"`);
-
-  // Return cleanup function
-  return () => {
-    console.log(`Cleaning up timer for: "${msg}"`);
-    if (intervalId !== undefined) {
-      clearInterval(intervalId);
-    }
-  };
-});
-
-message.set("World");
-message.set("Signals");
