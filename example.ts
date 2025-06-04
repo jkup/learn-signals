@@ -6,13 +6,13 @@ const counter = new Signal.State(0);
 const isEven = new Signal.Computed(() => (counter.get() & 1) === 0);
 const parity = new Signal.Computed(() => (isEven.get() ? "even" : "odd"));
 
-console.log(`Initial: ${counter.get()} is ${parity.get()}`);
+console.log(`Initial: ${counter.get()} is ${parity.get()}`); // Initial: 0 is even
 
 counter.set(1);
-console.log(`After set(1): ${counter.get()} is ${parity.get()}`);
+console.log(`After set(1): ${counter.get()} is ${parity.get()}`); // After set(1): 1 is odd
 
 counter.set(4);
-console.log(`After set(4): ${counter.get()} is ${parity.get()}`);
+console.log(`After set(4): ${counter.get()} is ${parity.get()}`); // After set(4): 4 is even
 
 // Example 2: Auto-tracking
 console.log("\nExample 2: Auto-tracking");
